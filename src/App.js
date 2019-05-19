@@ -1,12 +1,16 @@
 import React from 'react';
-import MainLayout from './layouts/MainLayout';
 import {  BrowserRouter as Router} from 'react-router-dom';
+import {Provider} from 'unstated';
+import MainLayout from './layouts/MainLayout';
+
 
 function App() {
   return (
-    <Router>
-      <MainLayout/>
-    </Router>
+    <Provider>
+        <Router>
+          <MainLayout/>
+        </Router>
+    </Provider>
   );
 }
 

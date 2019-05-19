@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 
 
-import { Card, Radio } from 'antd';
+import { Button, Card, Radio } from 'antd';
 
 const RadioGroup = Radio.Group;
 
@@ -10,41 +10,56 @@ const RadioGroup = Radio.Group;
 class ItemCard extends PureComponent{
     
     static propTypes = {
-        description: PropTypes.string,
-        title: PropTypes.string,
-        option: PropTypes.object,
-        price: PropTypes.number,
+        button: PropTypes.object,
+        data: PropTypes.object
     };
 
     constructor(props){
         super(props);
         
         this.state = {
-            optionValue: (props.option && props.option.defaultSelect)? props.option.defaultSelect: null
+            optionValue: (props.data.option && props.data.option.defaultSelect)? props.data.option.defaultSelect: null
         };
-        this.onChageHandleOptions = this.onChageHandleOptions.bind(this);
+        this.handleOptionsChange = this.handleOptionsChange.bind(this);
+        this.handleAddClick = this.handleAddClick.bind(this);
     }
 
-    onChageHandleOptions(e){
+    handleOptionsChange(value){
+        this.setState({optionValue: value.target.value});
+    }
 
+    handleAddClick(value){
+        
+        let orderSelected = {
+            id: this.props.data.id,
+            name: this.props.data.title,
+            price: this.props.data.price,
+        };
+
+        if(typeof this.props.data.option === 'object' && Object.keys(this.props.data.option)){
+            orderSelected.meet = this.state.optionValue
+        }
+
+
+        if(this.props.button && this.props.button.onClick) this.props.button.onClick(orderSelected); 
     }
     
     render() {
 
-        const { description, title, price, option } = this.props;
+        const { button, data } = this.props;
 
         return (
-            <Card title={title} className="itemcard">
+            <Card title={data.title} className="itemcard">
                 <p>
-                    {description}
+                    {data.description}
                 </p>
                 {
-                    (option && option.options.length) && (
+                    (data.option && data.option.options.length) && (
                      
-                            <RadioGroup onChange={this.onChageHandleOptions} value={this.state.optionValue}>
+                            <RadioGroup onChange={this.handleOptionsChange} value={this.state.optionValue}>
                                     {
-                                        option.options.map((item)=>
-                                            (<Radio value={item.value}>{item.label}</Radio>)
+                                        data.option.options.map((item, index)=>
+                                            (<Radio key={`IC-R-${index}`} value={item.value}>{item.label}</Radio>)
                                         )
                                     }
                                 </RadioGroup>
@@ -52,8 +67,15 @@ class ItemCard extends PureComponent{
                     )
                 }
                 <p className="itemcard__price-section">
-                    Price: <h5>${price}</h5>
+                    Price: <h5>${data.price}</h5>
                 </p>
+                {
+                    (button && button.label) && (
+                        <div>
+                            <Button type="primary" onClick={this.handleAddClick}>{button.label}</Button>
+                        </div>
+                    ) 
+                }
             </Card>
         )
     }

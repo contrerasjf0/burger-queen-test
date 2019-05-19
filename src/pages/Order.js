@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import {Subscribe} from 'unstated';
+
+import orderContainer from '../unstated/orderContainer';
 
 import { 
     Button,
@@ -23,6 +25,7 @@ const { Column } = Table;
 
 const itemFastFood = [
     {
+        id: '1',
         description: 'This hamburger has only one meat piece and all  classic ingredintes.',
         title: 'Hamburguesa Simple',
         price: 10.00,
@@ -46,6 +49,7 @@ const itemFastFood = [
         }
     },
     {
+        id: '2',
         description: 'This hamburger has two meat piece and all classic ingredintes.',
         title: 'Hamburguesa Double',
         price: 15.00,
@@ -69,27 +73,32 @@ const itemFastFood = [
         }
     },
     {
+        id: '3',
         description: 'This is a Bottled water of 500ml.',
         title: 'Bottled water',
         price: 5.00
     },
     {
+        id: '4',
         description: 'This is a Bottled water of 750ml.',
         title: 'Bottled water',
         price: 8.00
     },
     {
+        id: '5',
         description: 'This is a soda 500ml.',
         title: 'Soda',
         price: 7.00
     },
     {
+        id: '6',
         description: 'This is a soda 750ml.',
         title: 'Soda',
         price: 10.00
     },
 ], 
 tableList = [
+    { label: 'Not Table', value: '0' },
     { label: 'Table 1', value: '1' },
     { label: 'Table 2', value: '2' },
     { label: 'Table 3', value: '3' },
@@ -101,20 +110,45 @@ tableList = [
 class Order extends Component {
     static propTypes = {
 
-    }
-
-    state = {
-        table: ''
     };
+
+    orderState = {};
 
     constructor(props){
         super(props);
+        
+        this.state = {
+                table: 0
+        }
 
-        this.onChageTable = this.onChageTable.bind(this);
+        this.handleTableChage = this.handleTableChage.bind(this);
+        this.handleCustomerNameChage = this.handleCustomerNameChage.bind(this);
+        this.handleDiscountCodeChage = this.handleDiscountCodeChage.bind(this);
+        this.handleAddProductClick = this.handleAddProductClick.bind(this);
+
+        this.rendereTableFooter = this.rendereTableFooter.bind(this);
+        this.renderMain = this.renderMain.bind(this);
     }
 
-   onChageTable(e){
-        console.log('radio checked', e.target.value);
+    componentDidMount(){
+        this.orderState.setOrderNumber('xxx');
+    }
+
+    handleTableChage(value){
+       this.orderState.setTable(value.target.value);
+    }
+
+    handleCustomerNameChage(value){
+        this.orderState.setCustomerName(value.target.value);
+    }
+
+    handleDiscountCodeChage (value){
+        this.orderState.setDiscountCode(value.target.value);
+    }
+
+    handleAddProductClick(value){
+        this.orderState.setProducts(value);
+        this.orderState.setTotal(parseInt(value.price) + this.orderState.state.total);
     }
 
     renderTableAction(text, record){
@@ -124,23 +158,23 @@ class Order extends Component {
             </span>
         );
     }
-
+     
     rendereTableFooter(){
         return (
             <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32}} type="flex"  justify="space-between">
                 <Col sm={24} md={24} lg={8} className="order__table-footer_columns">
-                    <Input placeholder="Discount code"/>
+                    <Input placeholder="Discount code" onChange={this.handleDiscountCodeChage}/>
                 </Col>
                 <Col sm={24} md={12} lg={8} className="order__table-footer_columns">
                     <div className="order__table-footer__price-section">
                         <span className="order__table-footer-label">Total: </span>
-                        <span className="order__table-footer-label order__table-footer-price">$100.00</span>
+                        <span className="order__table-footer-label order__table-footer-price">${this.orderState.state.total}</span>
                     </div>
                 </Col>
                 <Col sm={24} md={12} lg={8} className="order__table-footer_columns">
                     <div className="order__table-footer-order">
                         <span className="order__table-footer-label">Order: </span>
-                        <span className="order__table-footer-label">4564</span>
+                        <span className="order__table-footer-label">{this.orderState.state.orderNumber}</span>
                     </div>
                 </Col>
                 <Col sm={24} md={12} lg={8} className="order__table-footer_columns">
@@ -150,7 +184,10 @@ class Order extends Component {
         );
     }
 
-    render() {
+    renderMain(orderState){
+        
+        this.orderState = orderState;
+
         return (
             <div className="page-container">
                 <div className="order__header-container">
@@ -164,11 +201,12 @@ class Order extends Component {
                     <Col sm={12}>
                         <div>
                             <div className="order__form__item-containe">
-                                <Input placeholder="Customer Name" />
+                                <Input placeholder="Customer Name" value={orderState.state.customerName}
+                                onChange={this.handleCustomerNameChage}/>
                             </div>
                             <div className="order__form__item-containe">
                                 <h3>Customer's table</h3>
-                                <RadioGroup options={tableList} onChange={this.onChangeTable} value={this.state.table} />
+                                <RadioGroup options={tableList} onChange={this.handleTableChage} value={orderState.state.table} />
                             </div>
                             <div className="order__form__item-containe">
                                 <Collapse defaultActiveKey={['ff']}>
@@ -182,10 +220,11 @@ class Order extends Component {
                                             {
                                                 itemFastFood.map((item) => {
                                                     return (
-                                                        <ItemCard description={item.description}
-                                                                        title={item.title}
-                                                                        price={item.price}
-                                                                        option={item.option}/>
+                                                        <ItemCard button={{
+                                                                        label: 'Add',
+                                                                        onClick: this.handleAddProductClick
+                                                                    }}
+                                                                    data={item}/>
                                                     );
                                                 })
                                             }
@@ -197,19 +236,27 @@ class Order extends Component {
                     </Col>
                     <Col sm={9} offset={2}>
                         <Table 
-                        dataSource={itemFastFood}
+                        dataSource={this.orderState.state.products}
                         footer={this.rendereTableFooter}
                         size="small"
                         scroll={{y: 300}}
                         pagination={false}
                           >
-                            <Column  className="order__table-price__column-item" dataIndex="title" title="Item" />
+                            <Column  className="order__table-price__column-item" dataIndex="name" title="Item" />
                             <Column dataIndex="price"  title="Price"  />
                             <Column dataIndex="actio" title="Action"  render={this.renderTableAction} />
                         </Table>
                     </Col>
                 </Row>
-            </div>   
+            </div>
+        );
+    }
+
+    render() {
+        return (
+            <Subscribe to={[orderContainer]}>
+                {this.renderMain}
+            </Subscribe>   
         );
     }
 }
