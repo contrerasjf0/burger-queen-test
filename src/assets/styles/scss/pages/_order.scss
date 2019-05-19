@@ -1,0 +1,30 @@
+.order__items-container{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.order__form__item-containe{
+    margin: 1rem auto;
+    width: 90%;
+}
+
+
+.order__table-price__column-item{
+    width: 400px;
+}
+
+.order__table-footer{
+    &-container{
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    &-label{
+        font-size: large;
+        font-weight: bold;
+    }
+    &_columns{
+        margin: 1rem 0px;
+    }
+}
