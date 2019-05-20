@@ -28,3 +28,10 @@
         margin: 1rem 0px;
     }
 }
+.order__table-row__action_delete{
+    cursor: pointer;
+
+    &:hover{
+        color: red;
+    }
+}

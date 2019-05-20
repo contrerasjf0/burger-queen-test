@@ -18,7 +18,7 @@ class ItemCard extends PureComponent{
         super(props);
         
         this.state = {
-            optionValue: (props.data.option && props.data.option.defaultSelect)? props.data.option.defaultSelect: null
+            optionValue: (props.data.options && props.data.options.default)? props.data.options.default: null
         };
         this.handleOptionsChange = this.handleOptionsChange.bind(this);
         this.handleAddClick = this.handleAddClick.bind(this);
@@ -32,12 +32,14 @@ class ItemCard extends PureComponent{
         
         let orderSelected = {
             id: this.props.data.id,
-            name: this.props.data.title,
+            name: this.props.data.name,
             price: this.props.data.price,
         };
 
-        if(typeof this.props.data.option === 'object' && Object.keys(this.props.data.option)){
-            orderSelected.meet = this.state.optionValue
+        if(typeof this.props.data.options === 'object' && Object.keys(this.props.data.options)){
+            orderSelected.meat = this.props.data.options.options.find((item) =>{
+                return item.value === this.state.optionValue;
+            }).label;
         }
 
 
@@ -49,16 +51,16 @@ class ItemCard extends PureComponent{
         const { button, data } = this.props;
 
         return (
-            <Card title={data.title} className="itemcard">
+            <Card title={data.name} className="itemcard">
                 <p>
                     {data.description}
                 </p>
                 {
-                    (data.option && data.option.options.length) && (
+                    (data.options && data.options.options.length) && (
                      
                             <RadioGroup onChange={this.handleOptionsChange} value={this.state.optionValue}>
                                     {
-                                        data.option.options.map((item, index)=>
+                                        data.options.options.map((item, index)=>
                                             (<Radio key={`IC-R-${index}`} value={item.value}>{item.label}</Radio>)
                                         )
                                     }
@@ -67,7 +69,7 @@ class ItemCard extends PureComponent{
                     )
                 }
                 <p className="itemcard__price-section">
-                    Price: <h5>${data.price}</h5>
+                    Price: <span>${data.price}</span>
                 </p>
                 {
                     (button && button.label) && (
