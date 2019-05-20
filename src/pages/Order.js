@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {Subscribe} from 'unstated';
 
 import orderContainer from '../unstated/orderContainer';
+import menuContainer from '../unstated/menuContainer';
 
 import { 
     Button,
@@ -12,7 +13,9 @@ import {
     Icon,
     Radio,
     Row,
-    Table
+    Table,
+    Form,
+    message
 } from 'antd';
 
 import ItemCard from '../components/ItemCard';
@@ -23,81 +26,7 @@ const Panel = Collapse.Panel;
 const RadioGroup = Radio.Group;
 const { Column } = Table;
 
-const itemFastFood = [
-    {
-        id: '1',
-        description: 'This hamburger has only one meat piece and all  classic ingredintes.',
-        title: 'Hamburguesa Simple',
-        price: 10.00,
-        option:{
-            title: 'Kind Of Meat',
-            defaultSelect: 'beef',
-            options: [
-                {
-                    value: 'beef',
-                    label: 'Beef'
-                },
-                {
-                    value: 'chicken',
-                    label: 'Chiken'
-                },
-                {
-                    value: 'vegetarian',
-                    label: 'Vegetarian'
-                }
-            ]
-        }
-    },
-    {
-        id: '2',
-        description: 'This hamburger has two meat piece and all classic ingredintes.',
-        title: 'Hamburguesa Double',
-        price: 15.00,
-        option:{
-            title: 'Kind Of Meat',
-            defaultSelect: 'beef',
-            options: [
-                {
-                    value: 'beef',
-                    label: 'Beef'
-                },
-                {
-                    value: 'chicken',
-                    label: 'Chiken'
-                },
-                {
-                    value: 'vegetarian',
-                    label: 'Vegetarian'
-                }
-            ]
-        }
-    },
-    {
-        id: '3',
-        description: 'This is a Bottled water of 500ml.',
-        title: 'Bottled water',
-        price: 5.00
-    },
-    {
-        id: '4',
-        description: 'This is a Bottled water of 750ml.',
-        title: 'Bottled water',
-        price: 8.00
-    },
-    {
-        id: '5',
-        description: 'This is a soda 500ml.',
-        title: 'Soda',
-        price: 7.00
-    },
-    {
-        id: '6',
-        description: 'This is a soda 750ml.',
-        title: 'Soda',
-        price: 10.00
-    },
-], 
-tableList = [
+const  tableList = [
     { label: 'Not Table', value: '0' },
     { label: 'Table 1', value: '1' },
     { label: 'Table 2', value: '2' },
@@ -113,25 +42,38 @@ class Order extends Component {
     };
 
     orderState = {};
+    menuState = {};
 
     constructor(props){
         super(props);
         
         this.state = {
-                table: 0
+                form: {
+                    name: {
+                        valid: true
+                    },
+                    table: {
+                        valid: true
+                    }
+                }
         }
 
         this.handleTableChage = this.handleTableChage.bind(this);
         this.handleCustomerNameChage = this.handleCustomerNameChage.bind(this);
         this.handleDiscountCodeChage = this.handleDiscountCodeChage.bind(this);
         this.handleAddProductClick = this.handleAddProductClick.bind(this);
+        this.handleRemoveItemClick = this.handleRemoveItemClick.bind(this);
+        this.handleValidateDCBlur = this.handleValidateDCBlur.bind(this);
+        this.handleSendOrderClick = this.handleSendOrderClick.bind(this);
 
         this.rendereTableFooter = this.rendereTableFooter.bind(this);
         this.renderMain = this.renderMain.bind(this);
+        this.renderTableAction = this.renderTableAction.bind(this);
     }
 
     componentDidMount(){
-        this.orderState.setOrderNumber('xxx');
+        this.orderState.getOrderNumber();
+        this.menuState.getBreakfastList();
     }
 
     handleTableChage(value){
@@ -147,29 +89,81 @@ class Order extends Component {
     }
 
     handleAddProductClick(value){
+        value.timestamp = new Date().getTime();
         this.orderState.setProducts(value);
         this.orderState.setTotal(parseInt(value.price) + this.orderState.state.total);
     }
 
+    handleRemoveItemClick(productId, timestamp){
+        if(this.orderState.state.products.length >= 1){
+            this.orderState.removeProduct(productId, timestamp);
+        }
+    }
+
+    handleValidateDCBlur(value){
+        this.orderState.getDiscountCode(value.target.value);
+    }
+
+    handleSendOrderClick(){
+
+        if(!this.orderState.state.customerName){
+            this.setState({form: { ...this.state.form, name: {valid: false}}})
+            return;
+        }
+        
+        if(!this.orderState.state.table){
+            this.setState({form: {...this.state.form, table: {valid: false}}})
+            return;
+        }
+        this.orderState.sendOrder().then(() => message.success('The order has been made', 3));
+    }
+
+    calculateTotal(total, discount){
+        let auxTotal = total;
+
+        if(!discount) return auxTotal;
+
+        auxTotal = auxTotal - (auxTotal * parseFloat('0.'+discount));
+        
+        return auxTotal
+    }
+
+    renderTableName(text, record){
+        return (
+            <span>{text} {(record.meat)? ' ('+record.meat+')' : ''}</span>
+            );
+    }
+
     renderTableAction(text, record){
         return (
-            <span>
+            <span className="order__table-row__action_delete" onClick={() => this.handleRemoveItemClick(record.productId, record.timestamp)}>
                 <Icon type="delete" />
             </span>
         );
     }
      
     rendereTableFooter(){
+        const existItems = (this.orderState.state.products.length)? false: true;
+
         return (
             <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 32}} type="flex"  justify="space-between">
                 <Col sm={24} md={24} lg={8} className="order__table-footer_columns">
-                    <Input placeholder="Discount code" onChange={this.handleDiscountCodeChage}/>
+                    <Input placeholder="Discount code" disabled={existItems} onChange={this.handleDiscountCodeChage}
+                    onBlur={this.handleValidateDCBlur}/>
                 </Col>
                 <Col sm={24} md={12} lg={8} className="order__table-footer_columns">
                     <div className="order__table-footer__price-section">
                         <span className="order__table-footer-label">Total: </span>
-                        <span className="order__table-footer-label order__table-footer-price">${this.orderState.state.total}</span>
+                        <span className="order__table-footer-label order__table-footer-price">${this.calculateTotal(this.orderState.state.total,
+                         this.orderState.state.discountCode.percentage)}</span>
                     </div>
+                    {
+                        (this.orderState.state.discountCode.id) && (
+                            <div>
+                                <span>Discount of {this.orderState.state.discountCode.percentage}%</span>
+                            </div>
+                        )
+                    }
                 </Col>
                 <Col sm={24} md={12} lg={8} className="order__table-footer_columns">
                     <div className="order__table-footer-order">
@@ -178,15 +172,16 @@ class Order extends Component {
                     </div>
                 </Col>
                 <Col sm={24} md={12} lg={8} className="order__table-footer_columns">
-                    <Button type="primary">Send Order</Button>
+                    <Button type="primary" disabled={existItems} onClick={this.handleSendOrderClick}>Send Order</Button>
                 </Col>
             </Row>
         );
     }
 
-    renderMain(orderState){
+    renderMain(orderState, menuState){
         
         this.orderState = orderState;
+        this.menuState = menuState;
 
         return (
             <div className="page-container">
@@ -201,26 +196,49 @@ class Order extends Component {
                     <Col sm={12}>
                         <div>
                             <div className="order__form__item-containe">
-                                <Input placeholder="Customer Name" value={orderState.state.customerName}
-                                onChange={this.handleCustomerNameChage}/>
+                                
+                                <Form.Item
+                                    validateStatus={(this.state.form.name.valid)? '':'error'}
+                                    help={(this.state.form.name.valid)? '':'This filed is riquired.'}
+                                >
+                                    <Input placeholder="Customer Name" value={this.orderState.state.customerName}
+                                    onChange={this.handleCustomerNameChage}/>
+                                </Form.Item>
                             </div>
                             <div className="order__form__item-containe">
                                 <h3>Customer's table</h3>
-                                <RadioGroup options={tableList} onChange={this.handleTableChage} value={orderState.state.table} />
+                                <Form.Item
+                                    validateStatus={(this.state.form.table.valid)? '':'error'}
+                                    help={(this.state.form.table.valid)? '':'This filed is riquired.'}
+                                >
+                                    <RadioGroup options={tableList} onChange={this.handleTableChage} value={this.orderState.state.table} />
+                                </Form.Item>
                             </div>
                             <div className="order__form__item-containe">
                                 <Collapse defaultActiveKey={['ff']}>
                                     <Panel header="Breakfast" key="bf">
                                         <div className="order__items-container">
-
+                                            {
+                                                    this.menuState.state.breakfastList.map((item, index) => {
+                                                        return (
+                                                            <ItemCard key={`O-IC-BF-${index}`}
+                                                                        button={{
+                                                                            label: 'Add',
+                                                                            onClick: this.handleAddProductClick
+                                                                        }}
+                                                                        data={item}/>
+                                                        );
+                                                    })
+                                                }
                                         </div>
                                     </Panel>
                                     <Panel header="Fast Food" key="ff">
                                         <div className="order__items-container">
                                             {
-                                                itemFastFood.map((item) => {
+                                                this.menuState.state.fastFoodList.map((item, index) => {
                                                     return (
-                                                        <ItemCard button={{
+                                                        <ItemCard   key={`O-IC-FF${index}`}
+                                                                    button={{
                                                                         label: 'Add',
                                                                         onClick: this.handleAddProductClick
                                                                     }}
@@ -242,9 +260,9 @@ class Order extends Component {
                         scroll={{y: 300}}
                         pagination={false}
                           >
-                            <Column  className="order__table-price__column-item" dataIndex="name" title="Item" />
-                            <Column dataIndex="price"  title="Price"  />
-                            <Column dataIndex="actio" title="Action"  render={this.renderTableAction} />
+                            <Column  className="order__table-price__column-item" dataIndex="name" title="Item" render={this.renderTableName} rowKey="name"/>
+                            <Column dataIndex="price"  title="Price"  rowKey="price"/>
+                            <Column dataIndex="actio" title="Action"  rowKey="action" render={this.renderTableAction} />
                         </Table>
                     </Col>
                 </Row>
@@ -254,7 +272,7 @@ class Order extends Component {
 
     render() {
         return (
-            <Subscribe to={[orderContainer]}>
+            <Subscribe to={[orderContainer, menuContainer]}>
                 {this.renderMain}
             </Subscribe>   
         );
